@@ -22,8 +22,8 @@ int Steps = 0;
 boolean Direction = true;// gre
 unsigned long last_time;
 unsigned long currentMillis ;
-int steps_left = 4095;
-long time;
+int steps_left = stepsPrRev;
+long time2;
 void setup()
 {
     Serial.begin(115200);
@@ -39,17 +39,17 @@ void loop()
     while (steps_left > 0) {
         currentMillis = micros();
         if (currentMillis - last_time >= 1000) {
-            stepper(1);
-            time = time + micros() - last_time;
+            stepper(3);
+            time2 = time2 + micros() - last_time;
             last_time = micros();
             steps_left--;
         }
     }
-    Serial.println(time);
+    Serial.println(time2);
     Serial.println("Wait...!");
     delay(2000);
     Direction = !Direction;
-    steps_left = 4095;
+    steps_left = stepsPrRev;
 }
 
 void stepper(int xw) {
