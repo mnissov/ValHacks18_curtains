@@ -12,10 +12,12 @@
     28/9/2013
 */
 
-#define IN1  15
-#define IN2  13
-#define IN3  12
-#define IN4  14
+#define IN1  15 // blue
+#define IN2  13 // pink
+#define IN3  12 // yellow
+#define IN4  14 // orange
+#define timeDelay 750;
+
 int Steps = 0;
 boolean Direction = true;// gre
 unsigned long last_time;
@@ -58,54 +60,63 @@ void stepper(int xw) {
                 digitalWrite(IN2, LOW);
                 digitalWrite(IN3, LOW);
                 digitalWrite(IN4, HIGH);
+                delayMicroseconds(timeDelay);
                 break;
             case 1:
                 digitalWrite(IN1, LOW);
                 digitalWrite(IN2, LOW);
                 digitalWrite(IN3, HIGH);
                 digitalWrite(IN4, HIGH);
+                delayMicroseconds(timeDelay);
                 break;
             case 2:
                 digitalWrite(IN1, LOW);
                 digitalWrite(IN2, LOW);
                 digitalWrite(IN3, HIGH);
                 digitalWrite(IN4, LOW);
+                delayMicroseconds(timeDelay);
                 break;
             case 3:
                 digitalWrite(IN1, LOW);
                 digitalWrite(IN2, HIGH);
                 digitalWrite(IN3, HIGH);
                 digitalWrite(IN4, LOW);
+                delayMicroseconds(timeDelay);
                 break;
             case 4:
                 digitalWrite(IN1, LOW);
                 digitalWrite(IN2, HIGH);
                 digitalWrite(IN3, LOW);
                 digitalWrite(IN4, LOW);
+                delayMicroseconds(timeDelay);
                 break;
             case 5:
                 digitalWrite(IN1, HIGH);
                 digitalWrite(IN2, HIGH);
                 digitalWrite(IN3, LOW);
                 digitalWrite(IN4, LOW);
+                delayMicroseconds(timeDelay);
                 break;
             case 6:
                 digitalWrite(IN1, HIGH);
                 digitalWrite(IN2, LOW);
                 digitalWrite(IN3, LOW);
                 digitalWrite(IN4, LOW);
+                delayMicroseconds(timeDelay);
                 break;
             case 7:
                 digitalWrite(IN1, HIGH);
                 digitalWrite(IN2, LOW);
                 digitalWrite(IN3, LOW);
                 digitalWrite(IN4, HIGH);
+                delayMicroseconds(timeDelay);
                 break;
             default:
                 digitalWrite(IN1, LOW);
                 digitalWrite(IN2, LOW);
                 digitalWrite(IN3, LOW);
                 digitalWrite(IN4, LOW);
+                delayMicroseconds(timeDelay);
                 break;
         }
         SetDirection();
