@@ -56,6 +56,62 @@ void setupwifi(){
   Serial.println(WiFi.localIP());
 }
 
+int requests(){
+  // Check if a client has connected
+  WiFiClient client = server.available();
+  if (!client) {
+    return -1;
+  }
+
+  // Wait until the client sends some data
+  Serial.println("new client");
+  for (int i = 0; !client.available(); i++) {
+    if (i>100){ // Wait 1000 miliseconds for data
+      //return -2;
+    }
+    delay(1);
+  }
+
+  // Read url request
+  String req = client.readStringUntil('\r');
+  Serial.println(req);
+  client.flush();
+
+  // Match the request
+  if (req.indexOf("/gpio/0") != -1) {
+    newGoal = 0;
+  } else if (req.indexOf("/gpio/1") != -1) {
+    newGoal = 4096;
+  } else {
+    Serial.println("invalid request");
+    client.stop();
+    return -3;
+  }
+
+  // Set GPIO2 according to the request
+  Serial.println(newGoal);
+
+
+  client.flush();
+
+  
+  // Prepare the response
+  String s = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<!DOCTYPE HTML>\r\n<html>\r\nGPIO is now ";
+  s += (newGoal) ? "high" : "low";
+  s += "</html>\n";
+ 
+
+  /*
+  String s="<!doctype html><html><body onload=\"alert('AmbientLightSensor' in window);\">";
+  */
+  // Send the response to the client
+  client.print(s);
+  delay(1);
+  Serial.println("Client disonnected");
+  
+  return newGoal;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -63,17 +119,25 @@ void setupwifi(){
 ////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////
 
-#define IN1  15
-#define IN2  13
-#define IN3  12
-#define IN4  14
-int Steps = 0;
+#define IN1  15 // blue
+#define IN2  13 // pink
+#define IN3  12 // yellow
+#define IN4  14 // orange
+#define stepsPrRev 4096
+#define timeDelay 750
 
+int Steps = 0;
 boolean Direction = true;// gre
 unsigned long last_time;
 unsigned long currentMillis ;
-int steps_left = 4095;
+int steps_left = stepsPrRev -1;
 long time2;
+
+const int phases1[] = {0, 0, 0, 0, 0, 1, 1, 1};
+const int phases2[] = {0, 0, 0, 1, 1, 1, 0, 0};
+const int phases3[] = {0, 1, 1, 1, 0, 0, 0, 0};
+const int phases4[] = {1, 1, 0, 0, 0, 0, 0, 1};
+int Phase = 0;
 
 void setupstepper()
 {
@@ -81,7 +145,6 @@ void setupstepper()
     pinMode(IN2, OUTPUT);
     pinMode(IN3, OUTPUT);
     pinMode(IN4, OUTPUT);
-    // delay(1000);
 }
 
 void stepper(int xw) {
@@ -142,6 +205,7 @@ void stepper(int xw) {
                 digitalWrite(IN4, LOW);
                 break;
         }
+        delayMicroseconds(timeDelay);
         SetDirection();
     }
 }
@@ -165,66 +229,20 @@ void SetDirection() {
 // main functions //////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////
+
+int goal;
+int pos; 
+
 void setup() {
   setupstepper();
   setupwifi();
 }
 
 void loop() {
-  // Check if a client has connected
-  WiFiClient client = server.available();
-  if (!client) {
-    return;
-  }
-
-  // Wait until the client sends some data
-  Serial.println("new client");
-  while (!client.available()) {
-    delay(1);
-  }
-
-  // Read the first line of the request
-  String req = client.readStringUntil('\r');
-  Serial.println(req);
-  client.flush();
-
-  // Match the request
-  int val;
-  if (req.indexOf("/gpio/0") != -1) {
-    val = 0;
-  } else if (req.indexOf("/gpio/1") != -1) {
-    val = 1;
-  } else {
-    Serial.println("invalid request");
-    client.stop();
-    return;
-  }
-
-  // Set GPIO2 according to the request
-  digitalWrite(2, val);
-  Serial.println(val);
-
-
-  client.flush();
-
-  // Prepare the response
-  String s = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<!DOCTYPE HTML>\r\n<html>\r\nGPIO is now ";
-  s += (val) ? "high" : "low";
-  s += "</html>\n";
-
-  // Send the response to the client
-  client.print(s);
-  delay(1);
-  Serial.println("Client disonnected");
-
-  // The client will actually be disconnected
-  // when the function returns and 'client' object is detroyed
-
-
-
-
-   
-      while (steps_left > 0) {
+    while(goal < 0){
+        goal = requests();  
+    }
+    while (steps_left > 0 && ) {
         currentMillis = micros();
         if (currentMillis - last_time >= 1000) {
             stepper(1);
@@ -232,13 +250,8 @@ void loop() {
             last_time = micros();
             steps_left--;
         }
+        goal = requests();
     }
-    Serial.println(time2);
-    Serial.println("Wait...!");
-    delay(2000);
-    Direction = !Direction;
-    steps_left = 4095;
-    
 }
 
 
