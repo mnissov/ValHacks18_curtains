@@ -4,6 +4,7 @@
 #define IN4  14 // orange
 #define timeDelay 750;
 #define FULL_ROTATION 4076
+#define LIMIT 2
 
 const int phases1[] = {0, 0, 0, 0, 0, 1, 1, 1};
 const int phases2[] = {0, 0, 0, 1, 1, 1, 0, 0};
@@ -17,6 +18,13 @@ void setup()
     pinMode(IN2, OUTPUT);
     pinMode(IN3, OUTPUT);
     pinMode(IN4, OUTPUT);
+    pinMode(LIMIT, INPUT_PULLDOWN);
+    attachInterrupt(digitalPinToInterrupt(LIMIT), handleInterrupt, RISING);
+}
+
+void handleInterrupt(){
+  steps_left = 0;
+  done = 1
 }
 
 void loop()
