@@ -57,6 +57,7 @@ void setupwifi(){
 }
 
 int requests(){
+
   // Check if a client has connected
   WiFiClient client = server.available();
   if (!client) {
@@ -78,6 +79,7 @@ int requests(){
   client.flush();
 
   // Match the request
+  int newGoal;
   if (req.indexOf("/gpio/0") != -1) {
     newGoal = 0;
   } else if (req.indexOf("/gpio/1") != -1) {
@@ -123,15 +125,9 @@ int requests(){
 #define IN2  13 // pink
 #define IN3  12 // yellow
 #define IN4  14 // orange
-#define stepsPrRev 4096
-#define timeDelay 750
+#define FULL_ROTATION 4096
+#define timeDelay 650
 
-int Steps = 0;
-boolean Direction = true;// gre
-unsigned long last_time;
-unsigned long currentMillis ;
-int steps_left = stepsPrRev -1;
-long time2;
 
 const int phases1[] = {0, 0, 0, 0, 0, 1, 1, 1};
 const int phases2[] = {0, 0, 0, 1, 1, 1, 0, 0};
@@ -147,81 +143,28 @@ void setupstepper()
     pinMode(IN4, OUTPUT);
 }
 
-void stepper(int xw) {
-    for (int x = 0; x < xw; x++) {
-        switch (Steps) {
-            case 0:
-                digitalWrite(IN1, LOW);
-                digitalWrite(IN2, LOW);
-                digitalWrite(IN3, LOW);
-                digitalWrite(IN4, HIGH);
-                break;
-            case 1:
-                digitalWrite(IN1, LOW);
-                digitalWrite(IN2, LOW);
-                digitalWrite(IN3, HIGH);
-                digitalWrite(IN4, HIGH);
-                break;
-            case 2:
-                digitalWrite(IN1, LOW);
-                digitalWrite(IN2, LOW);
-                digitalWrite(IN3, HIGH);
-                digitalWrite(IN4, LOW);
-                break;
-            case 3:
-                digitalWrite(IN1, LOW);
-                digitalWrite(IN2, HIGH);
-                digitalWrite(IN3, HIGH);
-                digitalWrite(IN4, LOW);
-                break;
-            case 4:
-                digitalWrite(IN1, LOW);
-                digitalWrite(IN2, HIGH);
-                digitalWrite(IN3, LOW);
-                digitalWrite(IN4, LOW);
-                break;
-            case 5:
-                digitalWrite(IN1, HIGH);
-                digitalWrite(IN2, HIGH);
-                digitalWrite(IN3, LOW);
-                digitalWrite(IN4, LOW);
-                break;
-            case 6:
-                digitalWrite(IN1, HIGH);
-                digitalWrite(IN2, LOW);
-                digitalWrite(IN3, LOW);
-                digitalWrite(IN4, LOW);
-                break;
-            case 7:
-                digitalWrite(IN1, HIGH);
-                digitalWrite(IN2, LOW);
-                digitalWrite(IN3, LOW);
-                digitalWrite(IN4, HIGH);
-                break;
-            default:
-                digitalWrite(IN1, LOW);
-                digitalWrite(IN2, LOW);
-                digitalWrite(IN3, LOW);
-                digitalWrite(IN4, LOW);
-                break;
-        }
+void stepper(int count) {
+    int rotationDirection = count < 1 ? -1 : 1;
+    count *= rotationDirection;
+    while(count>0)
+    {
+        digitalWrite(IN1, phases1[Phase]);
+        digitalWrite(IN2, phases2[Phase]);
+        digitalWrite(IN3, phases3[Phase]);
+        digitalWrite(IN4, phases4[Phase]);
+        IncrementPhase(rotationDirection);
         delayMicroseconds(timeDelay);
-        SetDirection();
+        count--;
     }
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, LOW);
+    digitalWrite(IN3, LOW);
+    digitalWrite(IN4, LOW);
 }
-void SetDirection() {
-    if (Direction == 1) {
-        Steps++;
-    }
-    if (Direction == 0) {
-        Steps--;
-    }
-    if (Steps > 7) {
-        Steps = 0;
-    }
-    if (Steps < 0) {
-        Steps = 7;
-    }
+void IncrementPhase(int rotationDirection)
+{
+    Phase += rotationDirection+8; // non negative values
+    Phase %= 8;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -230,28 +173,28 @@ void SetDirection() {
 ////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////
 
-int goal;
+int goal=-1;
 int pos; 
+#define LIMIT 2
 
 void setup() {
-  setupstepper();
-  setupwifi();
+    setupstepper();
+    setupwifi();
+    pinMode(LIMIT, INPUT_PULLUP);
+    attachInterrupt(digitalPinToInterrupt(LIMIT), handleInterrupt, FALLING);
+}
+
+void handleInterrupt(){
+
 }
 
 void loop() {
-    while(goal < 0){
-        goal = requests();  
-    }
-    while (steps_left > 0 && ) {
-        currentMillis = micros();
-        if (currentMillis - last_time >= 1000) {
-            stepper(1);
-            time2 = time2 + micros() - last_time;
-            last_time = micros();
-            steps_left--;
-        }
-        goal = requests();
-    }
+    while (goal < 0){
+      goal = requests();
+      Serial.println("JEg er her");
+    }  
+    stepper(-goal);
+    goal = -1;
 }
 
 
