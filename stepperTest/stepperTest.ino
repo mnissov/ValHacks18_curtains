@@ -16,12 +16,14 @@
 #define IN2  13
 #define IN3  12
 #define IN4  14
+#define stepsPrRev 4096
+
 int Steps = 0;
 boolean Direction = true;// gre
 unsigned long last_time;
 unsigned long currentMillis ;
-int steps_left = 4095;
-long time;
+int steps_left = stepsPrRev;
+long time2;
 void setup()
 {
     Serial.begin(115200);
@@ -37,17 +39,17 @@ void loop()
     while (steps_left > 0) {
         currentMillis = micros();
         if (currentMillis - last_time >= 1000) {
-            stepper(1);
-            time = time + micros() - last_time;
+            stepper(3);
+            time2 = time2 + micros() - last_time;
             last_time = micros();
             steps_left--;
         }
     }
-    Serial.println(time);
+    Serial.println(time2);
     Serial.println("Wait...!");
     delay(2000);
     Direction = !Direction;
-    steps_left = 4095;
+    steps_left = stepsPrRev;
 }
 
 void stepper(int xw) {
@@ -58,54 +60,63 @@ void stepper(int xw) {
                 digitalWrite(IN2, LOW);
                 digitalWrite(IN3, LOW);
                 digitalWrite(IN4, HIGH);
+                //delay(25);
                 break;
             case 1:
                 digitalWrite(IN1, LOW);
                 digitalWrite(IN2, LOW);
                 digitalWrite(IN3, HIGH);
                 digitalWrite(IN4, HIGH);
+                //delay(25);
                 break;
             case 2:
                 digitalWrite(IN1, LOW);
                 digitalWrite(IN2, LOW);
                 digitalWrite(IN3, HIGH);
                 digitalWrite(IN4, LOW);
+                //delay(25);
                 break;
             case 3:
                 digitalWrite(IN1, LOW);
                 digitalWrite(IN2, HIGH);
                 digitalWrite(IN3, HIGH);
                 digitalWrite(IN4, LOW);
+                //delay(25);
                 break;
             case 4:
                 digitalWrite(IN1, LOW);
                 digitalWrite(IN2, HIGH);
                 digitalWrite(IN3, LOW);
                 digitalWrite(IN4, LOW);
+                //delay(25);
                 break;
             case 5:
                 digitalWrite(IN1, HIGH);
                 digitalWrite(IN2, HIGH);
                 digitalWrite(IN3, LOW);
                 digitalWrite(IN4, LOW);
+                //delay(25);
                 break;
             case 6:
                 digitalWrite(IN1, HIGH);
                 digitalWrite(IN2, LOW);
                 digitalWrite(IN3, LOW);
                 digitalWrite(IN4, LOW);
+                //delay(25);
                 break;
             case 7:
                 digitalWrite(IN1, HIGH);
                 digitalWrite(IN2, LOW);
                 digitalWrite(IN3, LOW);
                 digitalWrite(IN4, HIGH);
+                //delay(25);
                 break;
             default:
                 digitalWrite(IN1, LOW);
                 digitalWrite(IN2, LOW);
                 digitalWrite(IN3, LOW);
                 digitalWrite(IN4, LOW);
+                //delay(25);
                 break;
         }
         SetDirection();

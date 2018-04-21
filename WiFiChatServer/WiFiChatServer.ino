@@ -16,7 +16,7 @@ const char* password = "yourWiFiPassword";
 // specify the port to listen on as an argument
 WiFiServer server(80);
 
-void setup() {
+void setupwifi(){
   Serial.begin(115200);
   delay(10);
 
@@ -46,6 +46,10 @@ void setup() {
 
   // Print the IP address
   Serial.println(WiFi.localIP());
+}
+
+void setup() {
+  setupwifi();
 }
 
 void loop() {
@@ -80,6 +84,8 @@ void loop() {
 
   // Set GPIO2 according to the request
   digitalWrite(2, val);
+  Serial.println(val);
+
 
   client.flush();
 
