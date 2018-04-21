@@ -5,6 +5,8 @@ Created on Sat Apr 21 14:40:49 2018
 @author: morten
 """
 
+#test
+
 from weather import Weather, Unit
 weather = Weather(unit=Unit.CELSIUS)
 
@@ -16,7 +18,7 @@ print(condition.text)
 
 # Get weather forecasts for the upcoming days.
 
-forecasts = location.forecast
+forecasts = lookup.forecast
 for forecast in forecasts:
     print(forecast.text)
     print(forecast.date)
