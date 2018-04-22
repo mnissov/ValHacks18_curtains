@@ -11,6 +11,7 @@ const int phases2[] = {0, 0, 0, 1, 1, 1, 0, 0};
 const int phases3[] = {0, 1, 1, 1, 0, 0, 0, 0};
 const int phases4[] = {1, 1, 0, 0, 0, 0, 0, 1};
 int Phase = 0;
+int court = 0;
 
 void setup()
 {
@@ -18,19 +19,16 @@ void setup()
     pinMode(IN2, OUTPUT);
     pinMode(IN3, OUTPUT);
     pinMode(IN4, OUTPUT);
-    pinMode(LIMIT, INPUT_PULLDOWN);
-    attachInterrupt(digitalPinToInterrupt(LIMIT), handleInterrupt, RISING);
+    //pinMode(LIMIT, INPUT_PULLUP);
+    //attachInterrupt(digitalPinToInterrupt(LIMIT), handleInterrupt, FALLING);
 }
 
-void handleInterrupt(){
-  steps_left = 0;
-  done = 1
-}
 
 void loop()
 {
     //stepper(FULL_ROTATION);
     stepper(-FULL_ROTATION);
+    delay(100);
 }
 
 void stepper(int count)
