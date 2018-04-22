@@ -8,7 +8,6 @@
 */
 
 #include <ESP8266WiFi.h>
-#include "components/driver/timer.h"
 
 #define IN1  15 // blue
 #define IN2  13 // pink
@@ -29,7 +28,7 @@ int Phase = 0;
 long count = FULL_ROTATION;
 long dist = 0;
 bool done = 0;
-int goal=-1;
+int goal = -1;
 
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -43,94 +42,94 @@ int goal=-1;
 // specify the port to listen on as an argument
 WiFiServer server(80);
 
-void setupwifi(){
-  Serial.begin(115200);
-  delay(10);
+void setupwifi() {
+    Serial.begin(115200);
+    delay(10);
 
-  // prepare GPIO2
-  pinMode(2, OUTPUT);
-  digitalWrite(2, 0);
+    // prepare GPIO2
+    pinMode(2, OUTPUT);
+    digitalWrite(2, 0);
 
-  // Connect to WiFi network
-  Serial.println();
-  Serial.println();
-  Serial.print("Connecting to ");
-  Serial.println(ssid);
+    // Connect to WiFi network
+    Serial.println();
+    Serial.println();
+    Serial.print("Connecting to ");
+    Serial.println(ssid);
 
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(ssid, password);
 
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("");
-  Serial.println("WiFi connected");
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(500);
+        Serial.print(".");
+    }
+    Serial.println("");
+    Serial.println("WiFi connected");
 
-  // Start the server
-  server.begin();
-  Serial.println("Server started");
+    // Start the server
+    server.begin();
+    Serial.println("Server started");
 
-  // Print the IP address
-  Serial.println(WiFi.localIP());
+    // Print the IP address
+    Serial.println(WiFi.localIP());
 }
 
-int requests(){
+int requests() {
 
-  // Check if a client has connected
-  WiFiClient client = server.available();
-  if (!client) {
-    return -1;
-  }
-
-  // Wait until the client sends some data
-  Serial.println("new client");
-  for (int i = 0; !client.available(); i++) {
-    if (i>100){ // Wait 1000 miliseconds for data
-      //return -2;
+    // Check if a client has connected
+    WiFiClient client = server.available();
+    if (!client) {
+        return -1;
     }
+
+    // Wait until the client sends some data
+    Serial.println("new client");
+    for (int i = 0; !client.available(); i++) {
+        if (i > 100) { // Wait 1000 miliseconds for data
+            //return -2;
+        }
+        delay(1);
+    }
+
+    // Read url request
+    String req = client.readStringUntil('\r');
+    Serial.println(req);
+    client.flush();
+
+    // Match the request
+    int newGoal;
+    if (req.indexOf("/gpio/0") != -1) {
+        newGoal = 0;
+    } else if (req.indexOf("/gpio/1") != -1) {
+        newGoal = 4096;
+    } else {
+        Serial.println("invalid request");
+        client.stop();
+        return -3;
+    }
+
+    // Set GPIO2 according to the request
+    Serial.println(newGoal);
+
+
+    client.flush();
+
+
+    // Prepare the response
+    String s = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<!DOCTYPE HTML>\r\n<html>\r\nGPIO is now ";
+    s += (newGoal) ? "high" : "low";
+    s += "</html>\n";
+
+
+    /*
+        String s="<!doctype html><html><body onload=\"alert('AmbientLightSensor' in window);\">";
+    */
+    // Send the response to the client
+    client.print(s);
     delay(1);
-  }
+    Serial.println("Client disonnected");
 
-  // Read url request
-  String req = client.readStringUntil('\r');
-  Serial.println(req);
-  client.flush();
-
-  // Match the request
-  int newGoal;
-  if (req.indexOf("/gpio/0") != -1) {
-    newGoal = 0;
-  } else if (req.indexOf("/gpio/1") != -1) {
-    newGoal = 4096;
-  } else {
-    Serial.println("invalid request");
-    client.stop();
-    return -3;
-  }
-
-  // Set GPIO2 according to the request
-  Serial.println(newGoal);
-
-
-  client.flush();
-
-  
-  // Prepare the response
-  String s = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<!DOCTYPE HTML>\r\n<html>\r\nGPIO is now ";
-  s += (newGoal) ? "high" : "low";
-  s += "</html>\n";
- 
-
-  /*
-  String s="<!doctype html><html><body onload=\"alert('AmbientLightSensor' in window);\">";
-  */
-  // Send the response to the client
-  client.print(s);
-  delay(1);
-  Serial.println("Client disonnected");
-  
-  return newGoal;
+    return newGoal;
 }
 
 
@@ -156,7 +155,7 @@ void stepper(long temp) {
     count = temp;
     long rotationDirection = count < 1 ? -1 : 1;
     count *= rotationDirection;
-    while(count>0)
+    while (count > 0)
     {
         digitalWrite(IN1, phases1[Phase]);
         digitalWrite(IN2, phases2[Phase]);
@@ -174,27 +173,56 @@ void stepper(long temp) {
 }
 void IncrementPhase(int rotationDirection)
 {
-    Phase += rotationDirection+8; // non negative values
+    Phase += rotationDirection + 8; // non negative values
     Phase %= 8;
 }
 
-void setPos(int pos){
-    switch(pos){
-      case 0: //down
-          done = 0;
-          stepper(dist==0? DIST:dist);
-          break;
-      case 1: //halfway
-          done = 0;
-          stepper(dist==0? DIST/2:dist);
-          break;
-      case 2:
-          done = 0;
-          while(done == 0){
-              stepper(FULL_ROTATION);
-          }
-          break;
+void setPos(int pos) {
+    switch (pos) {
+        case 0: //down
+            done = 0;
+            stepper(dist == 0 ? DIST : dist);
+            break;
+        case 1: //halfway
+            done = 0;
+            stepper(dist == 0 ? DIST / 2 : dist);
+            break;
+        case 2:
+            done = 0;
+            while (done == 0) {
+                stepper(FULL_ROTATION);
+            }
+            break;
     }
+}
+
+unsigned long currentPosition = 0;
+unsigned long targetPosition = 1*4096;
+unsigned long maximumPosition = 0;
+
+unsigned long previousMillis = 0;
+unsigned long currentMillis = 0;
+unsigned long delayMillis = 1000;
+
+void stepper2() {
+  currentMillis = micros();
+  if (previousMillis + delayMillis <= currentMillis) {
+    if (currentPosition < targetPosition) {
+      setPhase(currentPosition & 7);
+      currentPosition += 1;
+    } else if (currentPosition > targetPosition) {
+      setPhase(currentPosition & 7);
+      currentPosition -= 1;
+    }
+    previousMillis = currentMillis;
+  }
+}
+
+void setPhase(int Phase) {
+  digitalWrite(IN1, phases1[Phase]);
+  digitalWrite(IN2, phases2[Phase]);
+  digitalWrite(IN3, phases3[Phase]);
+  digitalWrite(IN4, phases4[Phase]);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -204,27 +232,27 @@ void setPos(int pos){
 ////////////////////////////////////////////////////////////////////////////////////////
 
 void setup() {
-    timer_init(1, 0);
     setupstepper();
     delay(1);
-    setupwifi(); //fuck watchdog
-    delay(1);
+    //setupwifi(); //fuck watchdog
+    //delay(1);
     //pinMode(LIMIT, INPUT_PULLUP);
     //attachInterrupt(digitalPinToInterrupt(LIMIT), handleInterrupt, FALLING);
 }
 
-void handleInterrupt(){
+void handleInterrupt() {
     count = 0;
     done = 1;
 }
 
 void loop() {
-    while (goal < 0){
-      goal = requests();
-      delay(1);
-    }
-    stepper(FULL_ROTATION);
-    goal = -1;
+    /*while (goal < 0) {
+        goal = requests();
+        delay(1);
+    }*/
+    stepper2();
+    //stepper(FULL_ROTATION);
+    //goal = -1;
 }
 
 
