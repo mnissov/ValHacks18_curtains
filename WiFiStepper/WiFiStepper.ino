@@ -7,7 +7,29 @@
     printed to Serial when the module is connected.
 */
 
+#include <ESP8266WiFi.h>
+#include "components/driver/timer.h"
 
+#define IN1  15 // blue
+#define IN2  13 // pink
+#define IN3  12 // yellow
+#define IN4  14 // orange
+#define FULL_ROTATION 4096
+#define timeDelay 750
+#define DIST 20*FULL_ROTATION
+#define LIMIT 2
+
+const char* ssid = "yourWiFiNetwork";
+const char* password = "yourWiFiPassword";
+const int phases1[] = {0, 0, 0, 0, 0, 1, 1, 1};
+const int phases2[] = {0, 0, 0, 1, 1, 1, 0, 0};
+const int phases3[] = {0, 1, 1, 1, 0, 0, 0, 0};
+const int phases4[] = {1, 1, 0, 0, 0, 0, 0, 1};
+int Phase = 0;
+long count = FULL_ROTATION;
+long dist = 0;
+bool done = 0;
+int goal=-1;
 
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -15,10 +37,7 @@
 // wifi things /////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////
-#include <ESP8266WiFi.h>
 
-const char* ssid = "yourWiFiNetwork";
-const char* password = "yourWiFiPassword";
 
 // Create an instance of the server
 // specify the port to listen on as an argument
@@ -121,30 +140,21 @@ int requests(){
 ////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////
 
-#define IN1  15 // blue
-#define IN2  13 // pink
-#define IN3  12 // yellow
-#define IN4  14 // orange
-#define FULL_ROTATION 4096
-#define timeDelay 650
-
-
-const int phases1[] = {0, 0, 0, 0, 0, 1, 1, 1};
-const int phases2[] = {0, 0, 0, 1, 1, 1, 0, 0};
-const int phases3[] = {0, 1, 1, 1, 0, 0, 0, 0};
-const int phases4[] = {1, 1, 0, 0, 0, 0, 0, 1};
-int Phase = 0;
-
 void setupstepper()
 {
     pinMode(IN1, OUTPUT);
     pinMode(IN2, OUTPUT);
     pinMode(IN3, OUTPUT);
     pinMode(IN4, OUTPUT);
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, LOW);
+    digitalWrite(IN3, LOW);
+    digitalWrite(IN4, LOW);
 }
 
-void stepper(int count) {
-    int rotationDirection = count < 1 ? -1 : 1;
+void stepper(long temp) {
+    count = temp;
+    long rotationDirection = count < 1 ? -1 : 1;
     count *= rotationDirection;
     while(count>0)
     {
@@ -155,6 +165,7 @@ void stepper(int count) {
         IncrementPhase(rotationDirection);
         delayMicroseconds(timeDelay);
         count--;
+        dist++;
     }
     digitalWrite(IN1, LOW);
     digitalWrite(IN2, LOW);
@@ -167,33 +178,52 @@ void IncrementPhase(int rotationDirection)
     Phase %= 8;
 }
 
+void setPos(int pos){
+    switch(pos){
+      case 0: //down
+          done = 0;
+          stepper(dist==0? DIST:dist);
+          break;
+      case 1: //halfway
+          done = 0;
+          stepper(dist==0? DIST/2:dist);
+          break;
+      case 2:
+          done = 0;
+          while(done == 0){
+              stepper(FULL_ROTATION);
+          }
+          break;
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////
 // main functions //////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////
 
-int goal=-1;
-int pos; 
-#define LIMIT 2
-
 void setup() {
+    timer_init(1, 0);
     setupstepper();
-    setupwifi();
-    pinMode(LIMIT, INPUT_PULLUP);
-    attachInterrupt(digitalPinToInterrupt(LIMIT), handleInterrupt, FALLING);
+    delay(1);
+    setupwifi(); //fuck watchdog
+    delay(1);
+    //pinMode(LIMIT, INPUT_PULLUP);
+    //attachInterrupt(digitalPinToInterrupt(LIMIT), handleInterrupt, FALLING);
 }
 
 void handleInterrupt(){
-
+    count = 0;
+    done = 1;
 }
 
 void loop() {
     while (goal < 0){
       goal = requests();
-      Serial.println("JEg er her");
-    }  
-    stepper(-goal);
+      delay(1);
+    }
+    stepper(FULL_ROTATION);
     goal = -1;
 }
 
