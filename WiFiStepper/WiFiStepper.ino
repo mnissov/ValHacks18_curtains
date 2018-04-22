@@ -15,7 +15,7 @@
 #define IN4  14 // orange
 #define FULL_ROTATION 4096
 #define timeDelay 750
-#define DIST 20*FULL_ROTATION
+#define DIST 20000
 #define LIMIT 2
 
 const char* ssid = "yourWiFiNetwork";
@@ -74,7 +74,7 @@ void setupwifi() {
     Serial.println(WiFi.localIP());
 }
 
-int requests() {
+long requests() {
 
     // Check if a client has connected
     WiFiClient client = server.available();
@@ -86,7 +86,7 @@ int requests() {
     Serial.println("new client");
     for (int i = 0; !client.available(); i++) {
         if (i > 100) { // Wait 1000 miliseconds for data
-            //return -2;
+            return -2;
         }
         delay(1);
     }
@@ -97,28 +97,41 @@ int requests() {
     client.flush();
 
     // Match the request
+    long iValue;
+    String sValue = "";
     int newGoal;
-    if (req.indexOf("/gpio/0") != -1) {
-        newGoal = 0;
-    } else if (req.indexOf("/gpio/1") != -1) {
-        newGoal = 4096;
+    String temp = "/goal=";
+    int index = req.indexOf(temp)+temp.length();
+    //Serial.println(index);
+    if (index < 0) {
+        newGoal = -1;
+    } else if (req[index] >= '0' && req[index] <= '9') {
+        int i = 1;
+        sValue += req[index];
+        while (req[index + i] >= '0' && req[index + i] <= '9') {
+            sValue += req[index + i];
+            i++;
+        }
+        iValue = sValue.toInt();
+        //Serial.println(sValue);
+        if (iValue == 0)
+            return -3;
     } else {
         Serial.println("invalid request");
         client.stop();
-        return -3;
+        return -4;
     }
 
     // Set GPIO2 according to the request
-    Serial.println(newGoal);
+    //Serial.println(iValue);
 
 
     client.flush();
 
 
     // Prepare the response
-    String s = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<!DOCTYPE HTML>\r\n<html>\r\nGPIO is now ";
-    s += (newGoal) ? "high" : "low";
-    s += "</html>\n";
+    String s = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<!DOCTYPE HTML>\r\n<html>\r\nGoal is now ";
+    s += sValue;
 
 
     /*
@@ -129,7 +142,7 @@ int requests() {
     delay(1);
     Serial.println("Client disonnected");
 
-    return newGoal;
+    return iValue;
 }
 
 
@@ -152,17 +165,21 @@ void setupstepper()
 }
 
 void stepper(long temp) {
+    long start = micros();
+    long ads = start;
     count = temp;
     long rotationDirection = count < 1 ? -1 : 1;
     count *= rotationDirection;
     while (count > 0)
     {
+        start=micros();
         digitalWrite(IN1, phases1[Phase]);
         digitalWrite(IN2, phases2[Phase]);
         digitalWrite(IN3, phases3[Phase]);
         digitalWrite(IN4, phases4[Phase]);
         IncrementPhase(rotationDirection);
-        delayMicroseconds(timeDelay);
+        //delayMicroseconds(timeDelay);
+        while(micros()<start+900){}
         count--;
         dist++;
     }
@@ -179,15 +196,17 @@ void IncrementPhase(int rotationDirection)
 
 void setPos(int pos) {
     switch (pos) {
-        case 0: //down
+        case 1: //down
             done = 0;
-            stepper(dist == 0 ? DIST : dist);
+            stepper(DIST);
+            //stepper(dist == 0 ? DIST : dist);
             break;
-        case 1: //halfway
+        case 2: //halfway
             done = 0;
-            stepper(dist == 0 ? DIST / 2 : dist);
+            stepper(DIST/2);
+            //stepper(dist == 0 ? DIST / 2 : dist);
             break;
-        case 2:
+        case 3: //up
             done = 0;
             while (done == 0) {
                 stepper(FULL_ROTATION);
@@ -234,8 +253,8 @@ void setPhase(int Phase) {
 void setup() {
     setupstepper();
     delay(1);
-    //setupwifi(); //fuck watchdog
-    //delay(1);
+    setupwifi(); //fuck watchdog
+    delay(1);
     //pinMode(LIMIT, INPUT_PULLUP);
     //attachInterrupt(digitalPinToInterrupt(LIMIT), handleInterrupt, FALLING);
 }
@@ -246,13 +265,13 @@ void handleInterrupt() {
 }
 
 void loop() {
-    /*while (goal < 0) {
-        goal = requests();
+    while (goal < 0) {
+        goal = (int)(requests());
         delay(1);
-    }*/
-    stepper2();
-    //stepper(FULL_ROTATION);
-    //goal = -1;
+    }
+    //stepper2();
+    setPos(goal);
+    goal = -1;
 }
 
 
